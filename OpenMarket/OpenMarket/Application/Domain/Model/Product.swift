@@ -7,7 +7,7 @@
 
 import UIKit
 
-struct Product: Codable {
+struct Product: Codable, Hashable {
     let id: Int
     let venderID: Int
     let name: String

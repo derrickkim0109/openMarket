@@ -12,35 +12,34 @@ class ViewController: UIViewController {
         case main
     }
     
-    struct Item: Hashable {
-        let id = UUID()
-        
-        let imageName: String
-        let productName: String
-        let originPrice: String
-        let discountedPrice: String
-    }
-    
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>! = nil
     private var collectionView: UICollectionView! = nil
-    private let mySegmentedControl = UISegmentedControl (items: ["List","Grid"])
+    private let mySegmentedControl = UISegmentedControl(items: ["List","Grid"])
     
     private let networkProvider = NetworkProvider()
+    private var productsModel: [Item] = []
+    
+    private var isSelected: Bool = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        
-        configureSegmentedControl()
-        configureHierarchy()
-        
-        configureDataSource()
-        
-        networkProvider.requestAndDecode(url: URL(string: "https://market-training.yagom-academy.kr/")!, dataType: ProductList.self) { result in
+
+        networkProvider.requestAndDecode(url: "https://market-training.yagom-academy.kr/api/products?page_no=1&items_per_page=10", dataType: ProductList.self) { result in
             switch result {
             case .success(let productList):
-                break
-            case .failure(let error):
+                productList.pages.forEach { product in
+                    let item = Item(imageName: product.thumbnailImage!, productName: product.name, originPrice: product.price, bargainPrice: product.bargainPrice, stock: product.stock)
+                    self.productsModel.append(item)
+                    
+                    DispatchQueue.main.async { [weak self] in
+                        self?.configureSegmentedControl()
+                        self?.configureHierarchy()
+                        self?.configureDataSource()
+                        self?.collectionView.reloadData()
+                    }
+                }
+            case .failure(_):
                 break
             }
         }
@@ -56,10 +55,12 @@ class ViewController: UIViewController {
                 guard let cell = cell as? CustomCollectionViewCell else {
                     return
                 }
+            
                 cell.contentView.layer.borderColor = .none
                 cell.contentView.layer.borderWidth = 0
-                
-                cell.configureStackView(of: .horizontal, and: .horizontal)
+                cell.accessories = [.disclosureIndicator()]
+
+                cell.configureStackView(of: .horizontal, textAlignment: .left)
             }
         case 1:
             collectionView.setCollectionViewLayout(createGridLayout(), animated: true)
@@ -68,10 +69,15 @@ class ViewController: UIViewController {
                     return
                 }
                 
+                isSelected = true
+                cell.accessories = [.delete()]
                 cell.contentView.layer.borderColor = UIColor.black.cgColor
                 cell.contentView.layer.borderWidth = 1
-                cell.configureStackView(of: .vertical, and: .vertical)
+                
+                cell.configureStackView(of: .vertical, textAlignment: .center)
             }
+            
+            collectionView.scrollToItem(at: IndexPath(item: -1, section: 0), at: .init(rawValue: 0), animated: false)
         default:
             break
         }
@@ -147,27 +153,24 @@ extension ViewController {
         // initial data
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         snapshot.appendSections([.main])
-        let products = [
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-            Item(imageName: "pencil", productName: "Mac", originPrice: "USD $1000", discountedPrice: ""),
-        ]
-        
-        let cellRegistration = UICollectionView.CellRegistration<CustomCollectionViewCell, Item> { (cell, indexPath, item) in
+ 
+        let cellListRegistration = UICollectionView.CellRegistration<CustomCollectionViewCell, Item> { (cell, indexPath, item) in
+            cell.configure(item)
             
-            cell.accessories = [.disclosureIndicator()]
+            if self.isSelected == false {
+                cell.accessories = [.disclosureIndicator()]
+            } else {
+                cell.accessories = [.delete()]
+            }
         }
-        
+    
         dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) {
             (collectionView: UICollectionView, indexPath: IndexPath, identifier: Item) -> UICollectionViewCell? in
             
-            return collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: identifier)
+                return collectionView.dequeueConfiguredReusableCell(using: cellListRegistration, for: indexPath, item: identifier)
         }
         
-        snapshot.appendItems(products, toSection: .main)
+        snapshot.appendItems(productsModel)
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }
@@ -178,4 +181,14 @@ extension ViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
     }
+}
+
+struct Item: Hashable {
+    let id = UUID()
+    
+    let imageName: UIImage
+    let productName: String
+    let originPrice: Int
+    let bargainPrice: Int
+    let stock: Int
 }

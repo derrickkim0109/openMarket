@@ -9,13 +9,13 @@ import UIKit
 
 @available(iOS 14.0, *)
 final class CustomCollectionViewCell: UICollectionViewListCell {
-    let rootStackView: UIStackView = {
+    private let rootStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.distribution = .fill
         stackView.axis = .horizontal
         stackView.alignment = .fill
-        stackView.spacing = 20
+        stackView.spacing = 10
         return stackView
     }()
     
@@ -24,7 +24,7 @@ final class CustomCollectionViewCell: UICollectionViewListCell {
         imageView.contentMode = .scaleAspectFit
         imageView.image = UIImage(named: "mini")
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.widthAnchor.constraint(equalTo: imageView.heightAnchor, multiplier: 1.0).isActive = true
+        imageView.widthAnchor.constraint(equalTo: imageView.heightAnchor).isActive = true
         return imageView
     }()
     
@@ -41,6 +41,7 @@ final class CustomCollectionViewCell: UICollectionViewListCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "연습타이틀"
+        label.font = UIFont.preferredFont(forTextStyle: .title3)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -65,7 +66,15 @@ final class CustomCollectionViewCell: UICollectionViewListCell {
     private let bargainPriceLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "bargain"
+        label.text = "USD $1000"
+        return label
+    }()
+    
+    private let stockLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "품절"
+        label.textAlignment = .right
         return label
     }()
     
@@ -79,6 +88,13 @@ final class CustomCollectionViewCell: UICollectionViewListCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+        imageView.image = nil
+        titleLabel.text = nil
+        originPriceLabel.text = nil
+        bargainPriceLabel.text = nil
+    }
+    
     func addSubView() {
         contentView.addSubview(rootStackView)
         rootStackView.addArrangedSubview(imageView)
@@ -90,21 +106,37 @@ final class CustomCollectionViewCell: UICollectionViewListCell {
         
         secondaryStackView.addArrangedSubview(originPriceLabel)
         secondaryStackView.addArrangedSubview(bargainPriceLabel)
+        rootStackView.addArrangedSubview(stockLabel)
         
         NSLayoutConstraint.activate([
             rootStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             rootStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             rootStackView.topAnchor.constraint(equalTo: contentView.topAnchor),
             rootStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            
+
+            stockLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 50)
         ])
     }
     
-    func configureStackView(of rootViewAxis: NSLayoutConstraint.Axis, and secondaryViewAxis: NSLayoutConstraint.Axis) {
-        rootStackView.axis = rootViewAxis
-        secondaryStackView.axis = secondaryViewAxis
+    func configureStackView(of axis: NSLayoutConstraint.Axis, textAlignment: NSTextAlignment) {
+        rootStackView.axis = axis
+        secondaryStackView.axis = axis
+        titleLabel.textAlignment = textAlignment
+        originPriceLabel.textAlignment = textAlignment
+        bargainPriceLabel.textAlignment = textAlignment
+        stockLabel.textAlignment = axis == .horizontal ? .right : .center
+        
+        if axis == .horizontal {
+            secondaryStackView.alignment = .fill
+        }
     }
     
-    func configure(data: Product) {
-        
+    func configure(_ data: Item) {
+        imageView.image = data.imageName
+        titleLabel.text = data.productName
+        originPriceLabel.text = data.originPrice.description
+        bargainPriceLabel.text = data.bargainPrice.description
+        stockLabel.text = data.stock.description == "0" ? "품절" : data.stock.description
     }
 }
