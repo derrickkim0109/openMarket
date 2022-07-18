@@ -10,7 +10,7 @@ import Foundation
 class NetworkProvider {
     var session: URLSessionProtocol
     
-    init(session: URLSessionProtocol) {
+    init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
     }
     
