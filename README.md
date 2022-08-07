@@ -28,8 +28,6 @@
 |<image src = "https://i.imgur.com/6HkYdmp.png" width="250" height="250">|<image src = "https://avatars.githubusercontent.com/u/59466342?v=4" width="250" height="250">
 |[수꿍](https://github.com/Jeon-Minsu)|[데릭](https://github.com/derrickkim0109)|
 
-## ⏱ TimeLine
-
 ### Week 1
     
 > 2022.7.25 ~ 2022.7.29
